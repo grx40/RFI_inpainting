@@ -6,8 +6,8 @@ from hera_sim.data import DATA_PATH
 from hera_sim import eor
 import copy
 import h5py
-
-
+import os
+import waterfall_plot
 
 
 class Dataset(Simulator):
@@ -25,7 +25,7 @@ class Dataset(Simulator):
         #the observation frequencies for fair comparison
         
         #this is just the frequency axis which must remain fixed for plotting purposes
-        self.n_freq = kwargs.pop('n_freq', 1024)
+        self.n_freq = kwargs.pop('n_freq', 500)
         #observation time must also be fixed for the randomly visibility dataset
         self.n_times = kwargs.pop('n_times', 500)
         #this can be randomized, but we shall keep this fixed for now
@@ -61,6 +61,12 @@ class Dataset(Simulator):
     
     #genereate dataset
     def generate(self, **kwargs):
+        #make a directory to store all the images
+        directory = 'Images'
+        if not os.path.exists(directory):
+            os.mkdir('Images')
+            os.mkdir('Images/Masked')
+
         data_masked = []
         data_non_masked =[]
         for n in range(self.ndata):
@@ -83,9 +89,11 @@ class Dataset(Simulator):
             self.sim.add_rfi("rfi_scatter", chance=0.001, strength=20, std = 5)
             #generate a random mask
             masked = self.random_mask(self.sim.data.data_array.copy())
-            data_masked.append(masked[:,0,:,0])
-            data_non_masked.append(self.sim.data.data_array[:,0,:,0])
-        
+            #data_masked.append(masked[:,0,:,0])
+            #data_non_masked.append(self.sim.data.data_array[:,0,:,0])
+            waterfall_plot.waterfall_separate(masked[:,0,:,0] , self.sim.data.freq_array[0]/1e6, self.sim.data.lst_array, n, masked = True )
+            waterfall_plot.waterfall_separate(np.ma.filled(np.ma.array(self.sim.data.data_array[:,0,:,0]),np.inf) , self.sim.data.freq_array[0]/1e6, self.sim.data.lst_array, n )
+
         #save info
         #with h5py.File('Waterfall_X_Y_sets.hdf5', 'w') as h:
         #    h.create_dataset('data_masked' , data = np.ma.filled(np.ma.array(data_masked),1))
@@ -98,7 +106,8 @@ class Dataset(Simulator):
 
 
         
-#def generate_random_masks(
+myData = Dataset(ndata = 20000)
+masked, not_masked = myData.generate()
 
 
 
