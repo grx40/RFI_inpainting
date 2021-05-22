@@ -8,7 +8,8 @@ import copy
 import h5py
 import os
 import waterfall_plot
-
+import tqdm
+from tqdm import tqdm
 
 class Dataset(Simulator):
     '''
@@ -39,21 +40,22 @@ class Dataset(Simulator):
         #set number of items in the randomized dataset
         self.ndata = kwargs.pop('ndata', 3)
     
+    
     def random_mask(self, array):
         '''
             Takes in an array and masks it
         '''
         #make a mask of the same dimension as our data array, we need only do this once.
-        bool_array = np.full((self.sim.data.data_array.shape[0], self.sim.data.data_array.shape[1], self.sim.data.data_array.shape[2], self.sim.data.data_array.shape[3]) , False)
+        bool_array = np.full((array.shape[0], array.shape[1], array.shape[2]) , False)
         
         #pick a random index to start
         nu_mask_i = int(np.random.uniform(1,500))
         nu_mask_f= int(nu_mask_i + np.random.uniform(10, 100))
-        bool_array[:,0,nu_mask_i:nu_mask_f,0] = True
+        bool_array[:,nu_mask_i:nu_mask_f,:] = True
         if np.random.normal(0,1) > 0:
             nu_mask_ti = int(np.random.uniform(1,300))
             nu_mask_tf= int(nu_mask_ti + np.random.uniform(1, 20))
-            bool_array[nu_mask_ti:nu_mask_tf,0,:,0] = True
+            bool_array[nu_mask_ti:nu_mask_tf,:,:] = True
         
         array = np.ma.array(array, mask = bool_array)
         return array
@@ -69,7 +71,7 @@ class Dataset(Simulator):
 
         data_masked = []
         data_non_masked =[]
-        for n in range(self.ndata):
+        for n in tqdm(range(self.ndata), desc = 'Making Data'):
             #run hera sim
             #instantiate the simulator class and pass all the info into the create_dataset class
             self.sim = Simulator(
@@ -87,12 +89,23 @@ class Dataset(Simulator):
             #self.sim.add_rfi("rfi_stations",)
             #self.sim.add_rfi("rfi_impulse", chance=0.01, strength=100.0)
             self.sim.add_rfi("rfi_scatter", chance=0.001, strength=20, std = 5)
+            
+            #split the visibilities
+            amplitude = np.real(self.sim.data.data_array[:,0,:,0])
+            phase = np.imag(self.sim.data.data_array[:,0,:,0])
+            
+            #put them in a single array
+            visibilities = np.zeros((amplitude.shape[0], amplitude.shape[1], 2))
+            visibilities[:,:,0] = amplitude
+            visibilities[:,:,1] = phase
+            
             #generate a random mask
-            masked = self.random_mask(self.sim.data.data_array.copy())
-            #data_masked.append(masked[:,0,:,0])
-            #data_non_masked.append(self.sim.data.data_array[:,0,:,0])
-            waterfall_plot.waterfall_separate(masked[:,0,:,0] , self.sim.data.freq_array[0]/1e6, self.sim.data.lst_array, n, masked = True )
-            waterfall_plot.waterfall_separate(np.ma.filled(np.ma.array(self.sim.data.data_array[:,0,:,0]),np.inf) , self.sim.data.freq_array[0]/1e6, self.sim.data.lst_array, n )
+            masked = self.random_mask(visibilities.copy())
+            
+            data_masked.append(masked)
+            data_non_masked.append(visibilities)
+            #waterfall_plot.waterfall_separate(masked[:,0,:,0] , self.sim.data.freq_array[0]/1e6, self.sim.data.lst_array, n, masked = True )
+            #waterfall_plot.waterfall_separate(np.ma.filled(np.ma.array(self.sim.data.data_array[:,0,:,0]),np.inf) , self.sim.data.freq_array[0]/1e6, self.sim.data.lst_array, n )
 
         #save info
         #with h5py.File('Waterfall_X_Y_sets.hdf5', 'w') as h:
@@ -106,8 +119,8 @@ class Dataset(Simulator):
 
 
         
-myData = Dataset(ndata = 20000)
-masked, not_masked = myData.generate()
+#myData = Dataset(ndata = 20000)
+#masked, not_masked = myData.generate()
 
 
 
