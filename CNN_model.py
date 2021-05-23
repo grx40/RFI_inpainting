@@ -20,7 +20,7 @@ class DeepCNN(Sequential):
         self.shape = shape
 
         self.masked_loss = loss_class.wrapper()
-        self.optimizer  = kwargs.pop('optimizer', 'Adam')
+        self.optimizer  = kwargs.pop('optimizer', 'adam')
         self.CNN_metrics = kwargs.pop('metrics', 'accuracy')
 
         #initialize the model from tensorflow. Vanilla sequential
@@ -59,7 +59,7 @@ class DeepCNN(Sequential):
         #7th layer
         self.model.add(Dense(3))
         
-        self.model.compile(loss = self.masked_loss, optimizer = self.optimizer, metrics = [self.masked_loss])
+        self.model.compile(loss = 'binary_crossentropy', optimizer = self.optimizer, metrics = ['accuracy'])
 
         self.model.build()
     
