@@ -26,7 +26,7 @@ class Dataset(Simulator):
         #the observation frequencies for fair comparison
         
         #this is just the frequency axis which must remain fixed for plotting purposes
-        self.n_freq = kwargs.pop('n_freq', 500)
+        self.n_freq = kwargs.pop('n_freq', 1024)
         #observation time must also be fixed for the randomly visibility dataset
         self.n_times = kwargs.pop('n_times', 500)
         #this can be randomized, but we shall keep this fixed for now
@@ -43,21 +43,27 @@ class Dataset(Simulator):
     
     def random_mask(self, array):
         '''
-            Takes in an array and masks it
+            Takes in an array (visibilities) with the 4 default hera_sim shape and masks it
         '''
         #make a mask of the same dimension as our data array, we need only do this once.
-        bool_array = np.full((array.shape[0], array.shape[1], array.shape[2]) , False)
-        
+        binary_mask = np.full((array.shape[0], array.shape[1]) , 1)
+
         #pick a random index to start
         nu_mask_i = int(np.random.uniform(1,500))
         nu_mask_f= int(nu_mask_i + np.random.uniform(10, 100))
-        bool_array[:,nu_mask_i:nu_mask_f,:] = True
+        #zero corresponds to the masked value (because we are including the mask in the input channel and we
+        #cannot take a gradient of the boolean values. Please ignore the name of this array, it is really binary
+        #will change that later
+        binary_mask[:,nu_mask_i:nu_mask_f] = 0
         if np.random.normal(0,1) > 0:
             nu_mask_ti = int(np.random.uniform(1,300))
             nu_mask_tf= int(nu_mask_ti + np.random.uniform(1, 20))
-            bool_array[nu_mask_ti:nu_mask_tf,:,:] = True
+            binary_mask[nu_mask_ti:nu_mask_tf,:] = 0
         
-        array = np.ma.array(array, mask = bool_array)
+        array[:,:,0] = np.multiply(array[:,:,0],binary_mask)
+        array[:,:,1] = np.multiply(array[:,:,1],binary_mask)
+
+        array[:,:,2] = binary_mask
         return array
     
     
@@ -95,12 +101,18 @@ class Dataset(Simulator):
             phase = np.imag(self.sim.data.data_array[:,0,:,0])
             
             #put them in a single array
-            visibilities = np.zeros((amplitude.shape[0], amplitude.shape[1], 2))
+            #the 3 channels are due amplitude, phase and mask
+            visibilities = np.zeros((amplitude.shape[0], amplitude.shape[1], 3))
+
             visibilities[:,:,0] = amplitude
             visibilities[:,:,1] = phase
-            
+
             #generate a random mask
             masked = self.random_mask(visibilities.copy())
+
+            #assign the true values to be the masks on the 3rd channel
+            visibilities[:,:,2] = masked[:,:,2]
+
             
             data_masked.append(masked)
             data_non_masked.append(visibilities)
@@ -113,13 +125,13 @@ class Dataset(Simulator):
         #    h.create_dataset('data_non_masked' , data = np.array(data_non_masked))
         #    h.create_dataset('mask_array' , data = np.ma.getmask(np.ma.array(data_masked)))
                 
-        return np.ma.filled(np.ma.array(data_masked),np.inf), np.array(data_non_masked)
+        return np.array(data_masked), np.array(data_non_masked)
 
 
 
 
         
-#myData = Dataset(ndata = 20000)
+#myData = Dataset(ndata = 20)
 #masked, not_masked = myData.generate()
 
 
