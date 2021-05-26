@@ -26,9 +26,9 @@ class Dataset(Simulator):
         #the observation frequencies for fair comparison
         
         #this is just the frequency axis which must remain fixed for plotting purposes
-        self.n_freq = kwargs.pop('n_freq', 1024)
+        self.n_freq = kwargs.pop('n_freq', 512)
         #observation time must also be fixed for the randomly visibility dataset
-        self.n_times = kwargs.pop('n_times', 500)
+        self.n_times = kwargs.pop('n_times', 512)
         #this can be randomized, but we shall keep this fixed for now
         antennas = {0: (20.0, 20.0, 0), 1: (50.0, 50.0, 0) }
         self.antennas = kwargs.pop('antennas', antennas )
@@ -64,6 +64,7 @@ class Dataset(Simulator):
         array[:,:,1] = np.multiply(array[:,:,1],binary_mask)
 
         array[:,:,2] = binary_mask
+        array[:,:,3] = binary_mask
         return array
     
     
@@ -102,7 +103,7 @@ class Dataset(Simulator):
             
             #put them in a single array
             #the 3 channels are due amplitude, phase and mask
-            visibilities = np.zeros((amplitude.shape[0], amplitude.shape[1], 3))
+            visibilities = np.zeros((amplitude.shape[0], amplitude.shape[1], 4))
 
             visibilities[:,:,0] = amplitude
             visibilities[:,:,1] = phase
@@ -112,6 +113,7 @@ class Dataset(Simulator):
 
             #assign the true values to be the masks on the 3rd channel
             visibilities[:,:,2] = masked[:,:,2]
+            visibilities[:,:,3] = masked[:,:,2]
 
             
             data_masked.append(masked)
