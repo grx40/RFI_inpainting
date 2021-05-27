@@ -98,8 +98,8 @@ class Dataset(Simulator):
             self.sim.add_rfi("rfi_scatter", chance=0.001, strength=20, std = 5)
             
             #split the visibilities
-            amplitude = np.real(self.sim.data.data_array[:,0,:,0])
-            phase = np.imag(self.sim.data.data_array[:,0,:,0])
+            amplitude = np.abs(self.sim.data.data_array[:,0,:,0])
+            phase = np.arctan(np.true_divide(np.imag(self.sim.data.data_array[:,0,:,0]),  np.real(self.sim.data.data_array[:,0,:,0])  ))
             
             #put them in a single array
             #the 3 channels are due amplitude, phase and mask
@@ -110,6 +110,11 @@ class Dataset(Simulator):
 
             #generate a random mask
             masked = self.random_mask(visibilities.copy())
+
+            #take the log of the magnitude
+            masked[:,:,0] = np.log10(masked[:,:,0])
+            masked[:,:,0][masked[:,:,0] == -np.inf] = 0
+            visibilities[:,:,0] = np.log10(visibilities[:,:,0])
 
             #assign the true values to be the masks on the 3rd channel
             visibilities[:,:,2] = masked[:,:,2]
