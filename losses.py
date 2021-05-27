@@ -12,16 +12,17 @@ class custom_loss:
                 which correspond to the real and imag part of the visibilities, then computes the 'chi^2'
                 of those two channels.
             '''
-            mask_array = tf.where(Y_pred[:,:,2] == True, 0 , 1 )
+            #mask_array = tf.where(Y_pred[:,:,:,2] == 1, 0 , 1 )
+            mask_array = Y_true[:,:,:,0:2]
             
-            #apply mask to both channels
-            for i in range(2):
-                Y_pred_masked = tf.math.multiply(Y_pred[:,:,i], tf.cast(mask_array, tf.float32))
-                Y_true_masked = tf.math.multiply(Y_pred[:,:,i], tf.cast(mask_array, tf.float32) )
+            #apply mask to the amplitude and visibility channels
+            Y_pred_masked = tf.math.multiply(Y_pred[:,:,:,0:2], tf.cast(mask_array, tf.float32))
+            Y_true_masked = tf.math.multiply(Y_true[:,:,:,0:2], tf.cast(mask_array, tf.float32) )
             
             #compute mean 'chi^2'
+            print('After loop' ,Y_pred_masked ,Y_true_masked )
         
-            return (K.mean(K.square(Y_pred_masked-  Y_true_masked  )  ))
+            return K.mean(K.square(K.abs((Y_pred_masked - Y_true_masked))))
 
         return masked_loss
 
