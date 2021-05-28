@@ -45,7 +45,7 @@ callback_list  = [custom_callbacks, modelcheckpoint , csvlogger]
 
 
 #CNN.model.summary()
-CNN.model.fit(X_masked,Y_not_masked, batch_size = 10, epochs = 1, validation_split = 0.1)
+CNN.model.fit(X_masked,Y_not_masked, batch_size = 10, epochs = 1, callbacks = [callback_list], validation_split = 0.1)
 
 
 
