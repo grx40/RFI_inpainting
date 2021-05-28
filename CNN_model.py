@@ -70,7 +70,7 @@ class Unet:
        Standard U-net, description to come
     '''
 
-    def __init__(self, input_shape, loss_class):
+    def __init__(self, input_shape, loss_class, load_weights):
         #inherit from Sequential
         super(Unet, self).__init__()
         
@@ -79,6 +79,10 @@ class Unet:
         #we need the loss for the compile step, this is just the object though, we'll initialize the
         #actual loss function (which is wrapped) later on
         self.loss = loss_class.wrapper()
+        
+        #load weights from previous run
+        self.weights = load_weights
+        
 
         #Apparently Sequential does this step automatically for you
         #This is a little less constrained than Sequential, so we need to make our input layer manually
@@ -98,7 +102,7 @@ class Unet:
         convDownSample1 = Conv2D(64, 3, strides = (2,2), padding = 'same', activation = 'relu', kernel_initializer = 'he_normal')(ConvL2)
         #--------- drop a step in the U-pattern --------#
         
-        #half the image size, double this channels because why the fuck not
+        #half the image size, double this channels because we can afford to
         ConvL3 = Conv2D(128, 3, padding = 'same', activation = 'relu', kernel_initializer = 'he_normal')(convDownSample1)
         ConvL4 = Conv2D(128, 3, padding = 'same', activation = 'relu', kernel_initializer = 'he_normal')(ConvL3)
         convDownSample2 = Conv2D(64, 3, strides = (2,2), padding = 'same', activation = 'relu', kernel_initializer = 'he_normal')(ConvL4)
@@ -167,14 +171,16 @@ class Unet:
         #this makes an object of the Model class, takes the place of the Sequential line in the CNN
         #reads the outputs and compiles all the layers
         self.model = Model(inputs = input_layer, outputs = dense2)
+        
 
-        self.model.compile(optimizer = Adam(lr = 1e-4), loss = 'binary_crossentropy', metrics = ['accuracy'])
-
-     
+        self.model.compile(optimizer = Adam(lr = 1e-4), loss = self.loss, metrics = ['accuracy', self.loss])
+        
+        if self.weights != None:
+            print('Loading weights' )
+            self.model.load_weights(self.weights)
+        
 
         self.model.summary()
-
-
 
 
 

@@ -1,8 +1,10 @@
 import numpy as np
+from datetime import date
+today = date.today()
 import create_dataset
 from create_dataset import Dataset
 from callbacks import CustomCallbacks
-import CNN_model as CNN
+import CNN_model as pyCNN
 import waterfall_plot
 import datetime
 import os
@@ -25,16 +27,19 @@ Y_not_masked = np.array(Y_not_masked).reshape(-1, Y_not_masked.shape[1],Y_not_ma
 
 print('Shapes' , X_masked.shape, Y_not_masked.shape, flush = True)
 
+#where are we saving our training info
+checkpoint_path = '/home/grx40/scratch/HERA_ML/ML_files_testbed/Checkpoints/'
+
 #create an instance of the loss class
 loss = custom_loss()
 
 #create a model with the CNN
-CNN = CNN.Unet(X_masked[1,:,:].shape, loss)
+CNN = pyCNN.Unet(X_masked[1,:,:].shape, loss, checkpoint_path)
 
-#note that callbacks can go into the fit step or the model step
 CNN.model.summary()
+#note that callbacks can go into the fit step or the model step
 custom_callbacks = CustomCallbacks()
-modelcheckpoint   = ModelCheckpoint(save_best_only=True, verbose = 1, filepath = '/home/grx40/scratch/HERA_ML/ML_files_testbed/Checkpoints', monitor = 'val_loss'  )
+modelcheckpoint   = ModelCheckpoint(save_best_only=True, save_weights_only = True, verbose = 1, filepath = checkpoint_path, monitor = 'val_loss'  )
 csvlogger = CSVLogger( filename = 'run/log.csv', separator = ','  )
 callback_list  = [custom_callbacks, modelcheckpoint , csvlogger]
 
